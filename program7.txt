@@ -1,99 +1,52 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <GL/glut.h>
+import numpy as np 
 
-typedef float point[3];
+import pandas as pd
 
+from matplotlib import pyplot as plt
 
-point v[]={{0.0, 0.0, 1.0}, {0.0, 0.942809, -0.33333},
+from sklearn.mixture import GaussianMixture 
 
-{-0.816497, -0.471405, -0.333333}, {0.816497, -0.471405, -0.333333}};
+from sklearn.cluster import KMeans
 
-int n;
+data = pd.read_csv('ex.csv') 
 
+f1 = data['V1'].values
 
-void triangle( point a, point b, point c)
-{
-	glBegin(GL_POLYGON);
-	glNormal3fv(a);
-	glVertex3fv(a);
-	glVertex3fv(b);
-	glVertex3fv(c);
-	glEnd();
-}
+f2 = data['V2'].values
 
-void divide_triangle(point a, point b, point c, int m)
-{
-point v1, v2, v3;
-int j;
-if(m>0)
-{
-	for(j=0; j<3; j++) v1[j]=(a[j]+b[j])/2;
-	for(j=0; j<3; j++) v2[j]=(a[j]+c[j])/2;
-	for(j=0; j<3; j++) v3[j]=(b[j]+c[j])/2;
-	divide_triangle(a, v1, v2, m-1);
-	divide_triangle(c, v2, v3, m-1);
-	divide_triangle(b, v3, v1, m-1);
-}
-	else{
-		triangle(a,b,c);
-	}
+X = np.array(list(zip(f1, f2))) 
 
-}
-void tetrahedron( int m)
-{
+print("x: ", X)
 
+print('Graph for whole dataset')
 
-	glColor3f(1.0,0.0,0.0);
-	divide_triangle(v[0], v[1], v[2], m);
-	glColor3f(0.0,1.0,0.0);
-	divide_triangle(v[3], v[2], v[1], m);
-	glColor3f(0.0,0.0,1.0);
-	divide_triangle(v[0], v[3], v[1], m);
-	glColor3f(0.0,0.0,0.0);
-	divide_triangle(v[0], v[2], v[3], m);
-}
+plt.scatter(f1, f2, c='black') # size can be set by adding s=size as param plt.show()
 
+kmeans = KMeans(2)
 
-void display(void)
-{
+labels = kmeans.fit(X).predict(X)
 
-glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+print("labels for kmeans:", labels)
 
-glLoadIdentity();
+print('Graph using Kmeans Algorithm') 
 
-tetrahedron(n);
-glFlush();
-}
+plt.scatter(f1, f2, c=labels)
 
-void myReshape(int w, int h)
-{
-	glViewport(0, 0, w, h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	if (w <= h)
-		glOrtho(-2.0, 2.0, -2.0 * (GLfloat) h / (GLfloat) w,2.0 * (GLfloat) h / (GLfloat) w, -10.0, 10.0);
+centroids = kmeans.cluster_centers_ 
 
-	else
-		glOrtho(-2.0 * (GLfloat) w / (GLfloat) h,2.0 * (GLfloat) w / (GLfloat) h, -2.0, 2.0, -10.0, 10.0);
+print("centroids:", centroids)
 
-	glMatrixMode(GL_MODELVIEW);
-	glutPostRedisplay();
-}
+plt.scatter(centroids[:, 0], centroids[:, 1], marker='*', c='red')
 
+plt.show()
 
-void main(int argc, char **argv)
-{
+gmm = GaussianMixture(2)
+labels = gmm.fit(X).predict(X) 
 
-	printf(" No. of Divisions ? ");
-	scanf("%d", &n);
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize(500, 500);
-	glutCreateWindow("3D Sierpinski Gasket");
-	glutReshapeFunc(myReshape);
-	glutDisplayFunc(display);
-	glEnable(GL_DEPTH_TEST);
-	glClearColor (1.0, 1.0, 1.0, 1.0);
-	glutMainLoop();
-}
+print("Labels for GMM: ", labels)
+
+print('Graph using EM Algorithm') 
+
+plt.scatter(f1, f2, c=labels) 
+
+plt.show()
