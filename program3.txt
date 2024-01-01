@@ -2,7 +2,7 @@ import csv
 a = []
 print("\n The Given Training Data Set \n")
 
-with open('D:/College/7th sem/AI ML/lab/ws.csv', 'r') as csvFile:
+with open('ws.csv', 'r') as csvFile:
     reader = csv.reader(csvFile)
     for row in reader:
         a.append(row)
