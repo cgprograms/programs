@@ -1,121 +1,64 @@
-#include <stdlib.h>
-#include <GL/glut.h>
 
-GLfloat vertices[][3] = {{-1.0,-1.0,-1.0},{1.0,-1.0,-1.0},
-{1.0,1.0,-1.0}, {-1.0,1.0,-1.0}, {-1.0,-1.0,1.0},
-{1.0,-1.0,1.0}, {1.0,1.0,1.0}, {-1.0,1.0,1.0}};
+import numpy as np
+import pandas as pd
+eps = np.finfo(float).eps
+#print(eps)
+from numpy import log2 as log
+outlook ='overcast,overcast,overcast,overcast,rainy,rainy,rainy,rainy,rainy,sunny,sunny,sunny,sunny,sunny'.split(',')
+temp = 'hot,cool,mild,hot,mild,cool,cool,mild,mild,hot,hot,mild,cool,mild'.split(',')
+humidity ='high,normal,high,normal,high,normal,normal,normal,high,high,high,high,normal,normal'.split(',')
+windy ='FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,TRUE'.split(',')
+play = 'yes,yes,yes,yes,yes,yes,no,yes,no,no,no,no,yes,yes'.split(',')
+dataset ={'outlook':outlook,'temp':temp,'humidity':humidity,'windy':windy,'play':play}
+df = pd.DataFrame(dataset,columns=['outlook','temp','humidity','windy','play'])
+print(df)
+def find_entropy(df):
+    Class = df.keys()[-1] 
+    entropy = 0
+    values = df[Class].unique()
+    for value in values:
+        fraction = df[Class].value_counts()[value]/len(df[Class])
+        entropy += -fraction*np.log2(fraction)
+    return entropy
+def find_entropy_attribute(df,attribute):
+    Class = df.keys()[-1] 
+    target_variables = df[Class].unique()
+    variables = df[attribute].unique() 
+    entropy2 = 0
+    for variable in variables:
+        entropy = 0
+        for target_variable in target_variables:
+            num = len(df[attribute][df[attribute]==variable][df[Class] ==target_variable])
+            den = len(df[attribute][df[attribute]==variable])
+            fraction = num/(den+eps)
+            entropy += -fraction*log(fraction+eps)
+        fraction2 = den/len(df)
+        entropy2 += -fraction2*entropy
+    return abs(entropy2)
+def find_winner(df):
+    Entropy_att = []
+    IG = []
+    for key in df.keys()[:-1]:
+        IG.append(find_entropy(df)-find_entropy_attribute(df,key))
+    return df.keys()[:-1][np.argmax(IG)]
+def get_subtable(df, node,value):
+    return df[df[node] == value].reset_index(drop=True)
 
-GLfloat normals[][3] = {{-1.0,-1.0,-1.0},{1.0,-1.0,-1.0},
-{1.0,1.0,-1.0}, {-1.0,1.0,-1.0}, {-1.0,-1.0,1.0},
-{1.0,-1.0,1.0}, {1.0,1.0,1.0}, {-1.0,1.0,1.0}};
-
-GLfloat colors[][3] = {{0.0,0.0,0.0},{1.0,0.0,0.0},
-{1.0,1.0,0.0}, {0.0,1.0,0.0}, {0.0,0.0,1.0},
-{1.0,0.0,1.0}, {1.0,1.0,1.0}, {0.0,1.0,1.0}};
-
-6/21/2023 ELAIYARAJA P 15
-
-void polygon(int a, int b, int c , int d) {
-	glBegin(GL_POLYGON);
-	glColor3fv(colors[a]);
-	glNormal3fv(normals[a]);
-	glVertex3fv(vertices[a]);
-	glColor3fv(colors[b]);
-	glNormal3fv(normals[b]);
-	glVertex3fv(vertices[b]);
-	glColor3fv(colors[c]);
-	glNormal3fv(normals[c]);
-	glVertex3fv(vertices[c]);
-	glColor3fv(colors[d]);
-	glNormal3fv(normals[d]);
-	glVertex3fv(vertices[d]);
-
-	glEnd();
-
-}
-
-
-void colorcube()
-{
-
-	polygon(0,3,2,1);
-	polygon(2,3,7,6);
-	polygon(0,4,7,3);
-	polygon(1,2,6,5);
-	polygon(4,5,6,7);
-	polygon(0,1,5,4);
-}
-
-static GLfloat theta[] = {0.0,0.0,0.0};
-static GLint axis = 2;
-static GLdouble viewer[]= {0.0, 0.0, 5.0}; /* initial viewer location */
-
-void display(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-	gluLookAt(viewer[0],viewer[1],viewer[2], 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-
-	glRotatef(theta[0], 1.0, 0.0, 0.0);
-	glRotatef(theta[1], 0.0, 1.0, 0.0);
-	glRotatef(theta[2], 0.0, 0.0, 1.0);
-
-	colorcube();
-	glFlush();
-	glutSwapBuffers();
-
-}
-void mouse(int btn, int state, int x, int y)
-{
-
-	if(btn==GLUT_LEFT_BUTTON && state == GLUT_DOWN) axis = 0;
-	if(btn==GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) axis = 1;
-	if(btn==GLUT_RIGHT_BUTTON && state == GLUT_DOWN) axis = 2;
-	theta[axis] += 2.0;
-	if( theta[axis] > 360.0 ) theta[axis] -= 360.0;
-	display();
-}
-
-
-void keys(unsigned char key, int x, int y)
-{
-
-
-	if(key == 'x') viewer[0]-= 1.0;
-	if(key == 'X') viewer[0]+= 1.0;
-	if(key == 'y') viewer[1]-= 1.0;
-	if(key == 'Y') viewer[1]+= 1.0;
-	if(key == 'z') viewer[2]-= 1.0;
-	if(key == 'Z') viewer[2]+= 1.0;
-	display();
-}
-
-
-void myReshape(int w, int h)
-{
-	glViewport(0, 0, w, h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	if(w<=h)
-		glFrustum(-2.0, 2.0, -2.0 * (GLfloat) h/ (GLfloat) w,2.0* (GLfloat) h / (GLfloat) w, 2.0, 20.0);
-	
-	else 
-		glFrustum(-2.0, 2.0, -2.0 * (GLfloat) w/ (GLfloat) h,2.0* (GLfloat) w / (GLfloat) h, 2.0, 20.0);
-
-	/* gluPerspective(45.0, w/h, -10.0, 10.0); */
-	glMatrixMode(GL_MODELVIEW);
-} 
-void main(int argc, char **argv)
-{
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize(500, 500);
-	glutCreateWindow("Colorcube Viewer");
-	glutReshapeFunc(myReshape);
-	glutDisplayFunc(display);
-	glutMouseFunc(mouse);
-	glutKeyboardFunc(keys);
-	glEnable(GL_DEPTH_TEST);
-	glutMainLoop();
-}
+def buildTree(df,tree=None):
+    Class = df.keys()[-1]
+    node = find_winner(df)
+    attValue = np.unique(df[node])
+    if tree is None:
+        tree={}
+        tree[node] = {}
+    for value in attValue:
+        subtable = get_subtable(df,node,value)
+        clValue,counts = np.unique(subtable['play'],return_counts=True)
+        if len(counts)==1:#Checking purity of subset
+            tree[node][value] = clValue[0]
+        else:
+            tree[node][value] = buildTree(subtable) #Calling the function recursively
+    return tree
+t=buildTree(df)
+import pprint
+pprint.pprint(t)
